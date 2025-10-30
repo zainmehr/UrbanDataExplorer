@@ -9,15 +9,20 @@ chemin_bronze_relatif = "../../data/bronze"
 chemin_bronze = os.path.abspath(chemin_bronze_relatif)
 
 Data_sources = {
-    "dvf": {
-        "url" : "https://static.data.gouv.fr/resources/demandes-de-valeurs-foncieres-geolocalisees/20251024-114956/dvf.csv.gz",
-        "format":"csv",
-        "filename":"valeurs_foncieres.csv.gz"
-    },
-    "logement_sociaux" : {
-        "url" : "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/logements-sociaux-finances-a-paris/exports/csv?use_labels=true",
-        "format":"csv",
-        "filename":"logements_sociaux.csv"
+    # "dvf": {
+    #     "url" : "https://static.data.gouv.fr/resources/demandes-de-valeurs-foncieres-geolocalisees/20251024-114956/dvf.csv.gz",
+    #     "format":"csv",
+    #     "filename":"valeurs_foncieres.csv.gz"
+    # },
+    # "logement_sociaux" : {
+    #     "url" : "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/logements-sociaux-finances-a-paris/exports/csv?use_labels=true",
+    #     "format":"csv",
+    #     "filename":"logements_sociaux.csv"
+    # },
+    "insee_logement" : {
+        "url" : "https://www.insee.fr/fr/statistiques/fichier/8202349/base-cc-logement-2021_csv.zip",
+        "format": "zip", 
+        "filename": "recensement_logement.zip" 
     }
 }
 
