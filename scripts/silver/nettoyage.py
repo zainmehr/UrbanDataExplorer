@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np 
+import zipfile
 
 # --- Chemins et Paramètres ---
 chemin_bronze_relatif = "../../data/bronze"
@@ -15,6 +16,14 @@ dvf_chemin_silver = os.path.join(chemin_silver,"dvf_transactions_silver.csv")
 
 logement_chemin_bronze = os.path.join(chemin_bronze,"logements_sociaux.csv")
 logement_chemin_silver = os.path.join(chemin_silver,"logements_sociaux_silver.csv") 
+
+insee_chemin_bronze_zip = os.path.join(chemin_bronze, "recensement_logement.zip")
+insee_chemin_silver = os.path.join(chemin_silver, "insee_logement_silver.csv")
+INSEE_CSV_NAME = "base-cc-logement-2021.CSV" 
+insee_chemin_temp_csv = os.path.join(chemin_bronze, INSEE_CSV_NAME)
+
+
+
 
 code_paris = '75'
 
@@ -122,16 +131,84 @@ def nettoyer_logement() :
 
     return df_clean
 
+def nettoyer_insee_logement():
+    print("\nDEBUT NETTOYAGE INSEE LOGEMENT")
+    
+    # 1. Décompression du fichier ZIP
+    try:
+        with zipfile.ZipFile(insee_chemin_bronze_zip, 'r') as zip_ref:
+            # Extrait le fichier CSV dans le même répertoire que le ZIP (chemin_bronze)
+            zip_ref.extract(INSEE_CSV_NAME, path=chemin_bronze)
+        print(f"1. DÉCOMPRESSION : {INSEE_CSV_NAME} extrait.")
+    except FileNotFoundError:
+        print(f"X Fichier ZIP INSEE non trouvé : {insee_chemin_bronze_zip}. Vérifiez l'ingestion.")
+        return pd.DataFrame()
+    except Exception as e:
+        print(f"X Erreur lors de la décompression du ZIP : {e}")
+        return pd.DataFrame()
+
+    # 2. Chargement du CSV décompressé
+    try:
+        df = pd.read_csv(
+            insee_chemin_temp_csv,
+            sep=';',
+            dtype={'CODGEO': str},
+            usecols=[
+                'CODGEO',
+                'P21_LOG', 'P21_RP_1P', 'P21_RP_2P', 'P21_RP_3P', 
+                'P21_RP_4P', 'P21_RP_5PP', 'P21_MAISON', 'P21_APPART'
+            ]
+        )
+        print(f"2. CHARGEMENT BRONZE INSEE : {len(df):,} lignes.")
+    except Exception as e:
+        print(f"X Erreur de chargement du CSV INSEE : {e}")
+        return pd.DataFrame()
+    
+    # 3. Suppression des doublons
+    rows_before_drop = len(df)
+    df.drop_duplicates(inplace=True) 
+    rows_after_drop = len(df)
+    print(f"3. SUPPRESSION DES DOUBLONS : {rows_before_drop - rows_after_drop} doublons supprimés.")
+
+    # 4. FILTRAGE ET CRÉATION DE LA CLÉ Arrondissement
+    # Filtrer uniquement les arrondissements de Paris (CODGEO commence par 751)
+    df_clean = df[df['CODGEO'].str.startswith('751')].copy()
+    
+    # Création de la clé Arrondissement
+    df_clean['Arrondissement'] = pd.to_numeric(df_clean['CODGEO'].str[-2:], errors='coerce')
+    print(f"4. FILTRAGE PARIS : {len(df_clean):,} lignes restantes (IRIS ou Arrondissements).")
+    
+    # 5. RENOMMAGE FINAL (Standardisation pour la Tâche 3)
+    df_clean = df_clean.rename(columns={
+        'P21_LOG': 'nb_logmt_total_parc', # Total du parc immobilier
+        'P21_RP_1P': 'rp_1p',
+        'P21_RP_2P': 'rp_2p',
+        'P21_RP_3P': 'rp_3p',
+        'P21_RP_4P': 'rp_4p',
+        'P21_RP_5PP': 'rp_5pp',
+        'P21_MAISON': 'nb_maisons_total',
+        'P21_APPART': 'nb_appartements_total',
+    }).drop(columns=['CODGEO'])
+
+    # 6. Sauvegarde en Couche Silver
+    df_clean.to_csv(insee_chemin_silver, index=False, encoding='utf-8')
+    print(f"6. SAUVEGARDE SILVER INSEE : {insee_chemin_silver} (OK)")
+    
+    return df_clean
+
+
+
 if __name__ == "__main__" :
     os.makedirs(chemin_silver, exist_ok=True) 
     
-    df_dvf_silver = nettoyer_dvf()
-    df_logement_silver = nettoyer_logement()
-    
+    # df_dvf_silver = nettoyer_dvf()
+    # df_logement_silver = nettoyer_logement()
+    df_insee_logement = nettoyer_insee_logement()
+
     print("\n FIN DU NETTOYAGE ")
 
     # Vérification si les DataFrames ne sont pas vides
-    if not df_dvf_silver.empty and not df_logement_silver.empty:
-        print("\n Les DataFrames Silver sont prêts pour l'agrégation (Tâche 3).")
-    else:
-        print("\nATTENTION : Un des DataFrames est vide. Vérifiez les chemins Bronze et les filtres.")
+    # if not df_dvf_silver.empty and not df_logement_silver.empty and not df_insee_logement.empty:
+    #     print("\n Les DataFrames Silver sont prêts pour l'agrégation (Tâche 3).")
+    # else:
+    #     print("\nATTENTION : Un des DataFrames est vide. Vérifiez les chemins Bronze et les filtres.")
