@@ -1,0 +1,10 @@
+# Ignorer les dossiers de données
+data/bronze/*
+data/silver/*
+data/gold/*
+
+# Ignorer le cache Python
+__pycache__/
+
+# Garder les dossiers vides (au cas où)
+!.gitkeep

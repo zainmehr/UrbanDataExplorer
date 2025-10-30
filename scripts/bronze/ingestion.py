@@ -4,25 +4,30 @@ import pandas as pd
 import json
 
 # Ce code est à exécuter depuis le répertoire scripts/bronze
-
+script_dir = os.path.dirname(os.path.abspath(__file__)) # Répertoire du script actuel
 chemin_bronze_relatif = "../../data/bronze"
-chemin_bronze = os.path.abspath(chemin_bronze_relatif)
+chemin_bronze = os.path.abspath(os.path.join(script_dir, chemin_bronze_relatif))
 
 Data_sources = {
-    # "dvf": {
-    #     "url" : "https://static.data.gouv.fr/resources/demandes-de-valeurs-foncieres-geolocalisees/20251024-114956/dvf.csv.gz",
-    #     "format":"csv",
-    #     "filename":"valeurs_foncieres.csv.gz"
-    # },
-    # "logement_sociaux" : {
-    #     "url" : "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/logements-sociaux-finances-a-paris/exports/csv?use_labels=true",
-    #     "format":"csv",
-    #     "filename":"logements_sociaux.csv"
-    # },
+    "dvf": {
+         "url" : "https://static.data.gouv.fr/resources/demandes-de-valeurs-foncieres-geolocalisees/20251024-114956/dvf.csv.gz",
+         "format":"csv",
+         "filename":"valeurs_foncieres.csv.gz"
+     },
+     "logement_sociaux" : {
+         "url" : "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/logements-sociaux-finances-a-paris/exports/csv?use_labels=true",
+         "format":"csv",
+         "filename":"logements_sociaux.csv"
+     },
     "insee_logement" : {
         "url" : "https://www.insee.fr/fr/statistiques/fichier/8202349/base-cc-logement-2021_csv.zip",
         "format": "zip", 
         "filename": "recensement_logement.zip" 
+    },
+    "accidentologie": {
+        "url": "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/accidentologie0/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B",
+        "format": "csv",
+        "filename": "accidentologie0.csv"
     }
 }
 
@@ -39,10 +44,11 @@ def collect_data_to_bronze(source_key, source_info) :
                 f.write(reponse.content)
             print(f"OK {source_key} téléchargé et stocké")
         except Exception as error :
-            print(f"X Echec de l'écriture pour {source_key}")
+            print(f"X Echec de l'écriture pour {source_key}: {error}")
     else :
         print(f"X Echec du téléchargement pour {source_key} : {reponse.status_code}")
 
 if __name__ == "__main__" :
+    os.makedirs(chemin_bronze, exist_ok=True)       # Crée le répertoire bronze s'il n'existe pas
     for key,info in Data_sources.items() :
         collect_data_to_bronze(key,info)
