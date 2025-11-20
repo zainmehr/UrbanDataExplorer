@@ -269,9 +269,9 @@ def nettoyer_accidentologie():
 if __name__ == "__main__" :
     #os.makedirs(chemin_silver, exist_ok=True) #
     
-    # df_dvf_silver = nettoyer_dvf() #
+    df_dvf_silver = nettoyer_dvf() 
     print("\n")
-    # df_logement_silver = nettoyer_logement() #
+    df_logement_silver = nettoyer_logement() 
     print("\n")
     df_filosofi_silver = nettoyer_filosofi()
     print("\n")
